@@ -1,11 +1,14 @@
 {
-  "name": "evacuation-plan-vectorizer",
+  "name": "greek-russian-flashcards",
   "version": "1.0.0",
-  "description": "React app to vectorize evacuation plan walls",
+  "description": "Mobile-friendly flashcard app for learning Greek-Russian vocabulary",
   "private": true,
   "dependencies": {
+    "@supabase/supabase-js": "^2.81.1",
+    "framer-motion": "^12.23.24",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^7.9.5",
     "react-scripts": "5.0.1"
   },
   "scripts": {
