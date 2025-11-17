@@ -10,10 +10,14 @@ const Flashcard = () => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
+  const [isExiting, setIsExiting] = useState(false);
+  const [exitDirection, setExitDirection] = useState(null);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
+  
+  const leftHighlight = useTransform(x, [-150, 0], [1, 0]);
+  const rightHighlight = useTransform(x, [0, 150], [0, 1]);
 
   // Smart card selection algorithm
   const getNextCard = async () => {
@@ -107,6 +111,9 @@ const Flashcard = () => {
     if (!currentCard || !showTranslation) return;
 
     try {
+      setIsExiting(true);
+      setExitDirection(remembered ? 'right' : 'left');
+      
       const now = new Date().toISOString().split('T')[0];
       const updates = {
         LastShown: now,
@@ -133,11 +140,12 @@ const Flashcard = () => {
         wrong: remembered ? prev.wrong : prev.wrong + 1,
       }));
 
-      // Reset position and get next card
-      x.set(0);
       setTimeout(() => {
+        setIsExiting(false);
+        setExitDirection(null);
+        x.set(0);
         getNextCard();
-      }, 300);
+      }, 500);
     } catch (error) {
       console.error('Error updating card:', error);
     }
@@ -180,6 +188,17 @@ const Flashcard = () => {
   const displayText = isGreekToRussian ? currentCard.Greek : currentCard.Russian;
   const translationText = isGreekToRussian ? currentCard.Russian : currentCard.Greek;
 
+  const cardVariants = {
+    initial: { scale: 0.8, opacity: 0 },
+    animate: { scale: 1, opacity: 1 },
+    exit: {
+      x: exitDirection === 'right' ? 1000 : -1000,
+      opacity: 0,
+      rotate: exitDirection === 'right' ? 45 : -45,
+      transition: { duration: 0.5, ease: "easeInOut" }
+    }
+  };
+
   return (
     <div className="flashcard-container">
       <div className="stats">
@@ -187,13 +206,40 @@ const Flashcard = () => {
         <span className="stat-wrong">✗ {stats.wrong}</span>
       </div>
 
+      {showTranslation && (
+        <>
+          <motion.div 
+            className="drop-zone drop-zone-left"
+            style={{ opacity: leftHighlight }}
+          >
+            <div className="drop-zone-content">
+              <span className="drop-zone-icon">✗</span>
+              <span className="drop-zone-text">Didn't remember</span>
+            </div>
+          </motion.div>
+          <motion.div 
+            className="drop-zone drop-zone-right"
+            style={{ opacity: rightHighlight }}
+          >
+            <div className="drop-zone-content">
+              <span className="drop-zone-icon">✓</span>
+              <span className="drop-zone-text">Remembered!</span>
+            </div>
+          </motion.div>
+        </>
+      )}
+
       <motion.div
         className="card"
-        style={{ x, rotate, opacity }}
+        style={{ x, rotate }}
         drag={showTranslation ? "x" : false}
         dragConstraints={{ left: 0, right: 0 }}
         onDragEnd={handleDragEnd}
         dragElastic={0.7}
+        variants={cardVariants}
+        initial="initial"
+        animate={isExiting ? "exit" : "animate"}
+        transition={{ duration: 0.3 }}
       >
         <div className="card-content">
           <div className="card-text main-text">
@@ -211,35 +257,20 @@ const Flashcard = () => {
       {showTranslation && (
         <div className="swipe-hints">
           <div className="hint hint-left">
-            <span className="hint-icon">✗</span>
-            <span className="hint-text">Didn't remember</span>
+            <span className="hint-icon">←</span>
+            <span className="hint-text">Swipe left</span>
           </div>
           <div className="hint hint-right">
-            <span className="hint-icon">✓</span>
-            <span className="hint-text">Remembered!</span>
+            <span className="hint-icon">→</span>
+            <span className="hint-text">Swipe right</span>
           </div>
         </div>
       )}
 
-      {!showTranslation ? (
+      {!showTranslation && (
         <button className="check-button" onClick={handleCheck}>
           Check Translation
         </button>
-      ) : (
-        <div className="manual-buttons">
-          <button
-            className="manual-button wrong-button"
-            onClick={() => handleSwipe(false)}
-          >
-            ✗ Didn't Remember
-          </button>
-          <button
-            className="manual-button correct-button"
-            onClick={() => handleSwipe(true)}
-          >
-            ✓ Remembered
-          </button>
-        </div>
       )}
 
       <div className="card-stats">
