@@ -108,10 +108,9 @@ const Flashcard = () => {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     getNextCard();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCheck = () => {
     setShowTranslation(true);
