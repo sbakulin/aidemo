@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/ArticlesPage.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 function ArticlesPage() {
   const [articles, setArticles] = useState([]);
