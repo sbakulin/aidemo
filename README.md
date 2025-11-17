@@ -21,12 +21,14 @@ A mobile-friendly web application for learning Greek-Russian vocabulary using an
 
 ### 2. Configure Environment Variables
 
-Edit the `.env` file in the root directory and replace `YOUR_SUPABASE_ANON_KEY_HERE` with your actual Supabase anon key:
+Create a `.env` file in the root directory with your Supabase credentials:
 
 ```env
-REACT_APP_SUPABASE_URL=https://efvetfxrxrcyjsdinuab.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=your-actual-anon-key-here
+REACT_APP_SUPABASE_URL=your-supabase-project-url
+REACT_APP_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
+
+For Netlify deployments, add these as environment variables in your Netlify project settings under **Site settings** → **Build & deploy** → **Environment variables**.
 
 ### 3. Install Dependencies and Run
 
