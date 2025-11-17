@@ -23,11 +23,6 @@ A mobile-friendly web application for learning Greek-Russian vocabulary using an
 
 Edit the `.env` file in the root directory and replace `YOUR_SUPABASE_ANON_KEY_HERE` with your actual Supabase anon key:
 
-```env
-REACT_APP_SUPABASE_URL=https://efvetfxrxrcyjsdinuab.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=your-actual-anon-key-here
-```
-
 ### 3. Install Dependencies and Run
 
 ```bash

@@ -2,26 +2,11 @@
   command = "npm run build"
   publish = "build"
 
-# API proxy - must come before SPA fallback
-[[redirects]]
-  from = "/api/*"
-  to = "https://app-zfurfzlx.fly.dev/api/:splat"
-  status = 200
-  force = true
+[build.environment]
+  CI = "true"
+  NODE_VERSION = "18"
 
-# SPA fallback - redirect all routes to index.html for React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "same-origin"
-    X-XSS-Protection = "1; mode=block"
-    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://app-zfurfzlx.fly.dev; script-src 'self'; style-src 'self' 'unsafe-inline';"
-    Strict-Transport-Security = "max-age=31536000"
