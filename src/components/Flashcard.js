@@ -15,7 +15,7 @@ const Flashcard = () => {
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
 
-  // Smart card selection algorithm
+  // Smart card selection algorithm with weighted random selection
   const getNextCard = async () => {
     try {
       setLoading(true);
@@ -34,57 +34,70 @@ const Flashcard = () => {
         return;
       }
 
-      // Calculate priority scores for each card
+      // Calculate weights for each card using weighted random selection
       const now = new Date();
-      const cardsWithScores = data.map(card => {
-        let score = 100; // Base score
-
-        // Recently added cards get higher priority
-        const daysSinceLastShown = card.LastShown
-          ? (now - new Date(card.LastShown)) / (1000 * 60 * 60 * 24)
-          : 999;
-
-        // Cards never shown get highest priority
-        if (!card.LastShown) {
-          score += 500;
-        } else if (daysSinceLastShown > 7) {
-          score += 200;
-        } else if (daysSinceLastShown > 3) {
-          score += 100;
-        } else if (daysSinceLastShown < 0.1) {
-          // Shown very recently, reduce priority
-          score -= 50;
+      const cardsWithWeights = data.map(card => {
+        if (currentCard && card.id === currentCard.id) {
+          return { ...card, weight: 0 };
         }
 
-        // Wrong answers increase priority
+        let weight = 1.0; // Base weight (epsilon to ensure all cards have a chance)
+
+        // Calculate days since last shown
+        const isNew = !card.LastShown;
+        const daysSinceLastShown = isNew
+          ? 999
+          : (now - new Date(card.LastShown)) / (1000 * 60 * 60 * 24);
+
+        // New cards get highest priority
+        if (isNew) {
+          weight += 100; // w_new: strong boost for never-shown cards
+        }
+
+        // Time-based weight: cards not shown recently get higher priority
+        weight += 20 * Math.log(1 + daysSinceLastShown); // w_time
+
+        // Accuracy-based weight: cards with lower accuracy get higher priority
         const wrongCount = card.NumberOfWrong || 0;
         const correctCount = card.NumberOfCorrect || 0;
         const totalAttempts = wrongCount + correctCount;
 
         if (totalAttempts > 0) {
-          const errorRate = wrongCount / totalAttempts;
-          score += errorRate * 300; // High error rate = high priority
+          const accuracy = correctCount / totalAttempts;
+          weight += 30 * (1 - accuracy); // w_err
+        } else if (!isNew) {
+          weight += 15;
         }
 
-        // Cards that were never correct get extra priority
-        if (correctCount === 0 && totalAttempts > 0) {
-          score += 150;
+        if (correctCount > 0) {
+          weight *= 1 / (1 + Math.sqrt(correctCount) * 0.3);
         }
 
-        // Cards marked as not remembered get priority
+        // Cards marked as not remembered get extra priority
         if (card.Remembered === false) {
-          score += 100;
+          weight += 20;
         }
 
-        // Add some randomness to avoid predictability
-        score += Math.random() * 50;
+        if (daysSinceLastShown < 0.0014) { // ~2 minutes
+          weight = 0.1; // Very low weight but not zero
+        }
 
-        return { ...card, score };
+        return { ...card, weight: Math.max(weight, 0.1) }; // Ensure minimum weight
       });
 
-      // Sort by score (highest first) and pick the top card
-      cardsWithScores.sort((a, b) => b.score - a.score);
-      const selectedCard = cardsWithScores[0];
+      // Calculate total weight
+      const totalWeight = cardsWithWeights.reduce((sum, card) => sum + card.weight, 0);
+
+      let random = Math.random() * totalWeight;
+      let selectedCard = cardsWithWeights[0]; // Fallback
+
+      for (const card of cardsWithWeights) {
+        random -= card.weight;
+        if (random <= 0) {
+          selectedCard = card;
+          break;
+        }
+      }
 
       setCurrentCard(selectedCard);
       setShowTranslation(false);
@@ -97,7 +110,7 @@ const Flashcard = () => {
 
   useEffect(() => {
     getNextCard();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCheck = () => {
     setShowTranslation(true);
