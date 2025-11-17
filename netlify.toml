@@ -2,6 +2,13 @@
   command = "npm run build"
   publish = "build"
 
+# API proxy - must come before SPA fallback
+[[redirects]]
+  from = "/api/*"
+  to = "https://app-zfurfzlx.fly.dev/api/:splat"
+  status = 200
+  force = true
+
 # SPA fallback - redirect all routes to index.html for React Router
 [[redirects]]
   from = "/*"
@@ -16,11 +23,5 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "same-origin"
     X-XSS-Protection = "1; mode=block"
-
-# Note: The backend API needs to be deployed separately (e.g., to Fly.io, Railway, or Render)
-# Once deployed, you can add API proxy redirects here:
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://YOUR-BACKEND-URL/api/:splat"
-#   status = 200
-#   force = true
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://app-zfurfzlx.fly.dev; script-src 'self'; style-src 'self' 'unsafe-inline';"
+    Strict-Transport-Security = "max-age=31536000"
