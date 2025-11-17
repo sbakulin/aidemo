@@ -114,7 +114,6 @@ function ArticlesPage() {
 
       recorder.start();
       setMediaRecorder(recorder);
-      setAudioChunks(chunks);
       setIsRecording(true);
     } catch (error) {
       console.error('Error starting recording:', error);
