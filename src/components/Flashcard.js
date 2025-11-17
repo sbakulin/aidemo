@@ -243,6 +243,7 @@ const Flashcard = () => {
       )}
 
       <motion.div
+        key={currentCard?.id}
         className="card"
         style={{ x, rotate }}
         drag={showTranslation ? "x" : false}
