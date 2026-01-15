@@ -1,0 +1,290 @@
+.verb-study-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: calc(100vh - 140px);
+  position: relative;
+  justify-content: flex-end;
+  padding-bottom: 100px;
+}
+
+.verb-study-container .stats {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  z-index: 1;
+}
+
+.verb-study-container .stat-correct {
+  color: #48bb78;
+  text-shadow: 0 2px 4px rgba(72, 187, 120, 0.3);
+}
+
+.verb-study-container .stat-wrong {
+  color: #f56565;
+  text-shadow: 0 2px 4px rgba(245, 101, 101, 0.3);
+}
+
+.verb-indicator {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 1;
+}
+
+.verb-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-right: 8px;
+}
+
+.verb-name {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 16px;
+  border-radius: 20px;
+}
+
+.verb-study-container .drop-zone {
+  position: fixed;
+  top: 0;
+  bottom: 70px;
+  width: 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.verb-study-container .drop-zone-left {
+  left: 0;
+  background: linear-gradient(to right, rgba(245, 101, 101, 0.3), transparent);
+}
+
+.verb-study-container .drop-zone-right {
+  right: 0;
+  background: linear-gradient(to left, rgba(72, 187, 120, 0.3), transparent);
+}
+
+.verb-study-container .drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.verb-study-container .drop-zone-icon {
+  font-size: 4rem;
+  font-weight: bold;
+}
+
+.verb-study-container .drop-zone-left .drop-zone-icon {
+  color: #f56565;
+}
+
+.verb-study-container .drop-zone-right .drop-zone-icon {
+  color: #48bb78;
+}
+
+.verb-study-container .drop-zone-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.verb-study-container .card {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  margin: 0 0 40px 0;
+  cursor: grab;
+  user-select: none;
+  position: relative;
+  z-index: 10;
+}
+
+.verb-study-container .card:active {
+  cursor: grabbing;
+}
+
+.verb-study-container .card-content {
+  width: 100%;
+  text-align: center;
+}
+
+.verb-study-container .card-text {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.verb-study-container .main-text {
+  color: #2d3748;
+  margin-bottom: 20px;
+}
+
+.verb-study-container .translation-text {
+  color: #667eea;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.verb-study-container .check-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 16px 48px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  margin-bottom: 20px;
+}
+
+.verb-study-container .check-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.verb-study-container .check-button:active {
+  transform: translateY(0);
+}
+
+.verb-study-container .swipe-hints {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.verb-study-container .hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.verb-study-container .hint-left {
+  color: #f56565;
+}
+
+.verb-study-container .hint-right {
+  color: #48bb78;
+}
+
+.verb-study-container .hint-icon {
+  font-size: 1.5rem;
+}
+
+.verb-study-container .card-stats {
+  text-align: center;
+  color: white;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.verb-study-container .loading,
+.verb-study-container .no-cards {
+  text-align: center;
+  color: white;
+  font-size: 1.5rem;
+  margin-top: 100px;
+}
+
+.verb-study-container .no-cards h2 {
+  margin-bottom: 10px;
+}
+
+.verb-study-container .no-cards p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .verb-study-container {
+    padding: 10px;
+    padding-bottom: 80px;
+  }
+
+  .verb-study-container .card {
+    height: 350px;
+    padding: 30px;
+    margin: 0 0 30px 0;
+  }
+
+  .verb-study-container .card-text {
+    font-size: 1.5rem;
+  }
+
+  .verb-study-container .stats {
+    font-size: 1rem;
+    gap: 20px;
+  }
+
+  .verb-indicator {
+    top: 50px;
+  }
+
+  .verb-name {
+    font-size: 1rem;
+  }
+
+  .verb-study-container .check-button {
+    padding: 14px 40px;
+    font-size: 1.1rem;
+  }
+
+  .verb-study-container .swipe-hints {
+    font-size: 0.8rem;
+    padding: 0 10px;
+  }
+
+  .verb-study-container .drop-zone-icon {
+    font-size: 3rem;
+  }
+
+  .verb-study-container .drop-zone-text {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .verb-study-container .card {
+    height: 300px;
+    padding: 20px;
+  }
+
+  .verb-study-container .card-text {
+    font-size: 1.3rem;
+  }
+}

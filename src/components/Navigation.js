@@ -9,6 +9,10 @@ const Navigation = () => {
         <span className="nav-icon">📚</span>
         <span className="nav-text">Learn</span>
       </NavLink>
+      <NavLink to="/verbs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+        <span className="nav-icon">📝</span>
+        <span className="nav-text">Verbs</span>
+      </NavLink>
       <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
         <span className="nav-icon">⚙️</span>
         <span className="nav-text">Settings</span>
