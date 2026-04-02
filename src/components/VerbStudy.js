@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, useMotionValue, useTransform, animate, useDragControls } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useSettings } from '../SettingsContext';
 import { useVerbs } from '../VerbsContext';
 import '../styles/VerbStudy.css';
 
-const SWIPE_THRESHOLD = 120;
+const SWIPE_THRESHOLD = 100;
 const FLY_AWAY_DISTANCE = 1500;
 
 const VerbStudy = () => {
@@ -17,9 +17,9 @@ const VerbStudy = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
   const [swiping, setSwiping] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const x = useMotionValue(0);
-  const dragControls = useDragControls();
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
   const stampLeftOpacity = useTransform(x, [-SWIPE_THRESHOLD, -40, 0], [1, 0, 0]);
   const stampRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD], [0, 0, 1]);
@@ -27,6 +27,8 @@ const VerbStudy = () => {
   const dropZoneRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD * 1.2], [0, 0.1, 1]);
   const dropZoneLeftScale = useTransform(x, [-SWIPE_THRESHOLD * 1.2, -40, 0], [1.05, 0.95, 0.9]);
   const dropZoneRightScale = useTransform(x, [0, 40, SWIPE_THRESHOLD * 1.2], [0.9, 0.95, 1.05]);
+
+  const dragRef = useRef({ startX: 0, lastX: 0, lastTime: 0, velocityX: 0 });
 
   const getNextPhrase = useCallback(async (excludeId) => {
     try {
@@ -41,7 +43,6 @@ const VerbStudy = () => {
       }
 
       const visibleVerbIds = visibleVerbs.map(v => v.id);
-
       const { data: phrases, error } = await supabase
         .from('VerbPhrases')
         .select('*, Verbs(*)')
@@ -68,33 +69,20 @@ const VerbStudy = () => {
           : Math.max(0, (now - new Date(phrase.LastShown)) / (1000 * 60 * 60 * 24));
 
         let weight = Math.pow(daysSinceLastShown + 0.5, 2);
-
-        if (isNew) {
-          weight *= 3;
-        }
-
-        if (phrase.Remembered === false) {
-          weight *= 2.5;
-        }
+        if (isNew) weight *= 3;
+        if (phrase.Remembered === false) weight *= 2.5;
 
         const wrongCount = phrase.NumberOfWrong || 0;
         const correctCount = phrase.NumberOfCorrect || 0;
         const totalAttempts = wrongCount + correctCount;
         if (totalAttempts >= 2) {
           const accuracy = correctCount / totalAttempts;
-          if (accuracy >= 0.8) {
-            weight *= 0.25;
-          } else if (accuracy >= 0.6) {
-            weight *= 0.5;
-          } else {
-            weight *= 1.5;
-          }
+          if (accuracy >= 0.8) weight *= 0.25;
+          else if (accuracy >= 0.6) weight *= 0.5;
+          else weight *= 1.5;
         }
 
-        if (!isNew && daysSinceLastShown < 0.004) {
-          weight *= 0.01;
-        }
-
+        if (!isNew && daysSinceLastShown < 0.004) weight *= 0.01;
         weight *= 0.8 + Math.random() * 0.4;
 
         return { ...phrase, weight: Math.max(weight, 0.001) };
@@ -105,10 +93,7 @@ const VerbStudy = () => {
       let selectedPhrase = phrasesWithWeights[0];
       for (const phrase of phrasesWithWeights) {
         random -= phrase.weight;
-        if (random <= 0) {
-          selectedPhrase = phrase;
-          break;
-        }
+        if (random <= 0) { selectedPhrase = phrase; break; }
       }
 
       setCurrentPhrase(selectedPhrase);
@@ -135,9 +120,7 @@ const VerbStudy = () => {
 
     const direction = remembered ? 1 : -1;
     await animate(x, direction * FLY_AWAY_DISTANCE, {
-      type: 'tween',
-      duration: 0.4,
-      ease: [0.32, 0, 0.67, 0],
+      type: 'tween', duration: 0.4, ease: [0.32, 0, 0.67, 0],
     });
 
     const now = new Date().toISOString().split('T')[0];
@@ -145,24 +128,16 @@ const VerbStudy = () => {
       LastShown: now,
       Remembered: remembered,
       TimesShown: (currentPhrase.TimesShown || 0) + 1,
-      NumberOfWrong: remembered
-        ? currentPhrase.NumberOfWrong || 0
-        : (currentPhrase.NumberOfWrong || 0) + 1,
-      NumberOfCorrect: remembered
-        ? (currentPhrase.NumberOfCorrect || 0) + 1
-        : currentPhrase.NumberOfCorrect || 0,
+      NumberOfWrong: remembered ? currentPhrase.NumberOfWrong || 0 : (currentPhrase.NumberOfWrong || 0) + 1,
+      NumberOfCorrect: remembered ? (currentPhrase.NumberOfCorrect || 0) + 1 : currentPhrase.NumberOfCorrect || 0,
     };
     if (remembered) phraseUpdates.LastCorrect = now;
     else phraseUpdates.LastWrong = now;
 
     const verbUpdates = {
       TimesShown: (currentVerb.TimesShown || 0) + 1,
-      NumberOfWrong: remembered
-        ? currentVerb.NumberOfWrong || 0
-        : (currentVerb.NumberOfWrong || 0) + 1,
-      NumberOfCorrect: remembered
-        ? (currentVerb.NumberOfCorrect || 0) + 1
-        : currentVerb.NumberOfCorrect || 0,
+      NumberOfWrong: remembered ? currentVerb.NumberOfWrong || 0 : (currentVerb.NumberOfWrong || 0) + 1,
+      NumberOfCorrect: remembered ? (currentVerb.NumberOfCorrect || 0) + 1 : currentVerb.NumberOfCorrect || 0,
     };
     if (remembered) verbUpdates.LastCorrect = now;
     else verbUpdates.LastWrong = now;
@@ -181,28 +156,45 @@ const VerbStudy = () => {
     getNextPhrase(phraseId);
   }, [currentPhrase, currentVerb, swiping, x, getNextPhrase]);
 
-  const handleDragEnd = useCallback((event, info) => {
-    if (!showTranslation) {
-      animate(x, 0, { type: 'spring', stiffness: 500, damping: 30 });
-      return;
-    }
+  const onPointerDown = useCallback((e) => {
+    if (!showTranslation || swiping) return;
+    e.preventDefault();
+    setDragging(true);
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    dragRef.current = { startX: clientX, lastX: clientX, lastTime: Date.now(), velocityX: 0 };
 
-    const offset = info.offset.x;
-    const velocity = info.velocity.x;
+    const onMove = (ev) => {
+      const cx = ev.clientX ?? ev.touches?.[0]?.clientX ?? 0;
+      const now = Date.now();
+      const dt = now - dragRef.current.lastTime;
+      if (dt > 0) {
+        dragRef.current.velocityX = (cx - dragRef.current.lastX) / dt * 1000;
+      }
+      dragRef.current.lastX = cx;
+      dragRef.current.lastTime = now;
+      x.set(cx - dragRef.current.startX);
+    };
 
-    if (Math.abs(offset) > SWIPE_THRESHOLD || Math.abs(velocity) > 500) {
-      const remembered = offset > 0 || velocity > 500;
-      commitSwipe(remembered);
-    } else {
-      animate(x, 0, { type: 'spring', stiffness: 400, damping: 25 });
-    }
-  }, [showTranslation, x, commitSwipe]);
+    const onUp = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
 
-  const startDrag = (event) => {
-    if (showTranslation) {
-      dragControls.start(event);
-    }
-  };
+      const offset = x.get();
+      const velocity = dragRef.current.velocityX;
+
+      if (Math.abs(offset) > SWIPE_THRESHOLD || Math.abs(velocity) > 500) {
+        commitSwipe(offset > 0);
+      } else {
+        animate(x, 0, { type: 'spring', stiffness: 400, damping: 25 });
+      }
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  }, [showTranslation, swiping, x, commitSwipe]);
 
   if (loading && !currentPhrase) {
     return (
@@ -262,17 +254,12 @@ const VerbStudy = () => {
 
       <motion.div
         key={currentPhrase.id}
-        className="card"
+        className={`card ${dragging ? 'card-dragging' : ''}`}
         style={{ x, rotate }}
-        drag="x"
-        dragControls={dragControls}
-        dragListener={false}
-        onDragEnd={handleDragEnd}
-        whileDrag={{ scale: 1.05 }}
+        onPointerDown={onPointerDown}
         initial={{ scale: 0.92, opacity: 0, y: 40 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
+        animate={{ scale: dragging ? 1.05 : 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-        onPointerDown={startDrag}
       >
         {showTranslation && (
           <>
