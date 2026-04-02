@@ -18,8 +18,6 @@ const Flashcard = () => {
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
-  const stampLeftOpacity = useTransform(x, [-SWIPE_THRESHOLD, -40, 0], [1, 0, 0]);
-  const stampRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD], [0, 0, 1]);
   const dropZoneLeftOpacity = useTransform(x, [-SWIPE_THRESHOLD * 1.2, -40, 0], [1, 0.1, 0]);
   const dropZoneRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD * 1.2], [0, 0.1, 1]);
   const dropZoneLeftScale = useTransform(x, [-SWIPE_THRESHOLD * 1.2, -40, 0], [1.05, 0.95, 0.9]);
@@ -210,6 +208,7 @@ const Flashcard = () => {
             style={{ opacity: dropZoneLeftOpacity, scale: dropZoneLeftScale }}
           >
             <div className="drop-zone-content">
+              <span className="drop-zone-label">FORGOT</span>
               <span className="drop-zone-icon">✗</span>
             </div>
           </motion.div>
@@ -218,6 +217,7 @@ const Flashcard = () => {
             style={{ opacity: dropZoneRightOpacity, scale: dropZoneRightScale }}
           >
             <div className="drop-zone-content">
+              <span className="drop-zone-label">KNOW</span>
               <span className="drop-zone-icon">✓</span>
             </div>
           </motion.div>
@@ -233,17 +233,6 @@ const Flashcard = () => {
         animate={{ scale: dragging ? 1.05 : 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
       >
-        {showTranslation && (
-          <>
-            <motion.div className="card-stamp stamp-forgot" style={{ opacity: stampLeftOpacity }}>
-              FORGOT
-            </motion.div>
-            <motion.div className="card-stamp stamp-remember" style={{ opacity: stampRightOpacity }}>
-              KNOW
-            </motion.div>
-          </>
-        )}
-
         <div className="card-content">
           <div className="card-text main-text">{displayText}</div>
           {showTranslation && (
@@ -262,7 +251,7 @@ const Flashcard = () => {
         <div className="swipe-cta">Drag the card</div>
       )}
 
-      <div className="version-tag">v3.0</div>
+      <div className="version-tag">v3.1</div>
     </div>
   );
 };
