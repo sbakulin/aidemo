@@ -266,8 +266,8 @@ const VerbStudy = () => {
         className="card"
         style={{ x, rotate }}
         drag={showTranslation ? 'x' : false}
-        dragConstraints={false}
         onDragEnd={handleDragEnd}
+        whileDrag={{ scale: 1.05, cursor: 'grabbing' }}
         initial={{ scale: 0.92, opacity: 0, y: 40 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
