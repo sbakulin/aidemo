@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useSettings } from '../SettingsContext';
 import { useVerbs } from '../VerbsContext';
 import '../styles/VerbStudy.css';
+
+const SWIPE_THRESHOLD = 120;
+const FLY_AWAY_DISTANCE = 1500;
 
 const VerbStudy = () => {
   const { isGreekToRussian } = useSettings();
@@ -13,22 +16,20 @@ const VerbStudy = () => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
-  const [isExiting, setIsExiting] = useState(false);
-  const [exitDirection, setExitDirection] = useState(null);
+  const [swiping, setSwiping] = useState(false);
 
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-25, 25]);
+  const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
+  const stampLeftOpacity = useTransform(x, [-SWIPE_THRESHOLD, -40, 0], [1, 0, 0]);
+  const stampRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD], [0, 0, 1]);
+  const dropZoneLeftOpacity = useTransform(x, [-SWIPE_THRESHOLD * 1.2, -40, 0], [1, 0.1, 0]);
+  const dropZoneRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD * 1.2], [0, 0.1, 1]);
+  const dropZoneLeftScale = useTransform(x, [-SWIPE_THRESHOLD * 1.2, -40, 0], [1.05, 0.95, 0.9]);
+  const dropZoneRightScale = useTransform(x, [0, 40, SWIPE_THRESHOLD * 1.2], [0.9, 0.95, 1.05]);
 
-  const leftHighlight = useTransform(x, [-150, 0], [1, 0]);
-  const rightHighlight = useTransform(x, [0, 150], [0, 1]);
-
-  // Card selection algorithm for verbs
-  // Priority 1: Never shown phrases (TimesShown = 0 or LastShown = null)
-  // Priority 2: Phrases answered "didn't remember" (Remembered = false), oldest first
-  const getNextPhrase = useCallback(async () => {
+  const getNextPhrase = useCallback(async (excludeId) => {
     try {
       setLoading(true);
-
       const visibleVerbs = getVisibleVerbs();
 
       if (visibleVerbs.length === 0) {
@@ -40,7 +41,6 @@ const VerbStudy = () => {
 
       const visibleVerbIds = visibleVerbs.map(v => v.id);
 
-      // Get all phrases for visible verbs
       const { data: phrases, error } = await supabase
         .from('VerbPhrases')
         .select('*, Verbs(*)')
@@ -55,33 +55,65 @@ const VerbStudy = () => {
         return;
       }
 
-      // Separate phrases into categories
-      const neverShown = phrases.filter(p => !p.LastShown || p.TimesShown === 0);
-      const notRemembered = phrases
-        .filter(p => p.Remembered === false && p.LastShown)
-        .sort((a, b) => new Date(a.LastShown) - new Date(b.LastShown)); // Oldest first
-      const others = phrases
-        .filter(p => p.LastShown && p.Remembered !== false)
-        .sort((a, b) => new Date(a.LastShown) - new Date(b.LastShown)); // Oldest first
+      const now = new Date();
+      const phrasesWithWeights = phrases.map(phrase => {
+        if (excludeId && phrase.id === excludeId) {
+          return { ...phrase, weight: 0.001 };
+        }
 
-      let selectedPhrase;
+        const isNew = !phrase.LastShown || phrase.TimesShown === 0;
+        const daysSinceLastShown = isNew
+          ? 30
+          : Math.max(0, (now - new Date(phrase.LastShown)) / (1000 * 60 * 60 * 24));
 
-      // Priority 1: Never shown phrases (random selection among them)
-      if (neverShown.length > 0) {
-        const randomIndex = Math.floor(Math.random() * neverShown.length);
-        selectedPhrase = neverShown[randomIndex];
-      }
-      // Priority 2: Not remembered phrases, starting with oldest
-      else if (notRemembered.length > 0) {
-        selectedPhrase = notRemembered[0];
-      }
-      // Fallback: Other phrases, oldest first
-      else if (others.length > 0) {
-        selectedPhrase = others[0];
-      }
-      // Ultimate fallback: just pick any phrase
-      else {
-        selectedPhrase = phrases[0];
+        // Time is the dominant factor
+        let weight = Math.pow(daysSinceLastShown + 0.5, 2);
+
+        // Never-shown: moderate boost
+        if (isNew) {
+          weight *= 3;
+        }
+
+        // Last answer was wrong: boost
+        if (phrase.Remembered === false) {
+          weight *= 2.5;
+        }
+
+        // Accuracy-based adjustment
+        const wrongCount = phrase.NumberOfWrong || 0;
+        const correctCount = phrase.NumberOfCorrect || 0;
+        const totalAttempts = wrongCount + correctCount;
+        if (totalAttempts >= 2) {
+          const accuracy = correctCount / totalAttempts;
+          if (accuracy >= 0.8) {
+            weight *= 0.25;
+          } else if (accuracy >= 0.6) {
+            weight *= 0.5;
+          } else {
+            weight *= 1.5;
+          }
+        }
+
+        // Very recently shown: heavy penalty
+        if (!isNew && daysSinceLastShown < 0.004) {
+          weight *= 0.01;
+        }
+
+        // Random jitter
+        weight *= 0.8 + Math.random() * 0.4;
+
+        return { ...phrase, weight: Math.max(weight, 0.001) };
+      });
+
+      const totalWeight = phrasesWithWeights.reduce((sum, p) => sum + p.weight, 0);
+      let random = Math.random() * totalWeight;
+      let selectedPhrase = phrasesWithWeights[0];
+      for (const phrase of phrasesWithWeights) {
+        random -= phrase.weight;
+        if (random <= 0) {
+          selectedPhrase = phrase;
+          break;
+        }
       }
 
       setCurrentPhrase(selectedPhrase);
@@ -95,100 +127,85 @@ const VerbStudy = () => {
   }, [getVisibleVerbs]);
 
   useEffect(() => {
-    getNextPhrase();
+    getNextPhrase(null);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCheck = () => {
     setShowTranslation(true);
   };
 
-  const handleSwipe = async (remembered) => {
-    if (!currentPhrase || !showTranslation) return;
+  const commitSwipe = useCallback(async (remembered) => {
+    if (!currentPhrase || swiping) return;
+    setSwiping(true);
 
-    try {
-      setIsExiting(true);
-      setExitDirection(remembered ? 'right' : 'left');
+    const direction = remembered ? 1 : -1;
+    await animate(x, direction * FLY_AWAY_DISTANCE, {
+      type: 'tween',
+      duration: 0.4,
+      ease: [0.32, 0, 0.67, 0],
+    });
 
-      const now = new Date().toISOString().split('T')[0];
+    const now = new Date().toISOString().split('T')[0];
+    const phraseUpdates = {
+      LastShown: now,
+      Remembered: remembered,
+      TimesShown: (currentPhrase.TimesShown || 0) + 1,
+      NumberOfWrong: remembered
+        ? currentPhrase.NumberOfWrong || 0
+        : (currentPhrase.NumberOfWrong || 0) + 1,
+      NumberOfCorrect: remembered
+        ? (currentPhrase.NumberOfCorrect || 0) + 1
+        : currentPhrase.NumberOfCorrect || 0,
+    };
+    if (remembered) phraseUpdates.LastCorrect = now;
+    else phraseUpdates.LastWrong = now;
 
-      // Update phrase statistics
-      const phraseUpdates = {
-        LastShown: now,
-        Remembered: remembered,
-        TimesShown: (currentPhrase.TimesShown || 0) + 1,
-        NumberOfWrong: remembered
-          ? currentPhrase.NumberOfWrong || 0
-          : (currentPhrase.NumberOfWrong || 0) + 1,
-        NumberOfCorrect: remembered
-          ? (currentPhrase.NumberOfCorrect || 0) + 1
-          : currentPhrase.NumberOfCorrect || 0,
-      };
+    const verbUpdates = {
+      TimesShown: (currentVerb.TimesShown || 0) + 1,
+      NumberOfWrong: remembered
+        ? currentVerb.NumberOfWrong || 0
+        : (currentVerb.NumberOfWrong || 0) + 1,
+      NumberOfCorrect: remembered
+        ? (currentVerb.NumberOfCorrect || 0) + 1
+        : currentVerb.NumberOfCorrect || 0,
+    };
+    if (remembered) verbUpdates.LastCorrect = now;
+    else verbUpdates.LastWrong = now;
 
-      if (remembered) {
-        phraseUpdates.LastCorrect = now;
-      } else {
-        phraseUpdates.LastWrong = now;
-      }
+    const phraseId = currentPhrase.id;
 
-      await supabase
-        .from('VerbPhrases')
-        .update(phraseUpdates)
-        .eq('id', currentPhrase.id);
+    // Fire-and-forget DB updates
+    supabase.from('VerbPhrases').update(phraseUpdates).eq('id', phraseId).then();
+    supabase.from('Verbs').update(verbUpdates).eq('id', currentVerb.id).then();
 
-      // Update verb statistics
-      const verbUpdates = {
-        TimesShown: (currentVerb.TimesShown || 0) + 1,
-        NumberOfWrong: remembered
-          ? currentVerb.NumberOfWrong || 0
-          : (currentVerb.NumberOfWrong || 0) + 1,
-        NumberOfCorrect: remembered
-          ? (currentVerb.NumberOfCorrect || 0) + 1
-          : currentVerb.NumberOfCorrect || 0,
-      };
+    setStats(prev => ({
+      correct: remembered ? prev.correct + 1 : prev.correct,
+      wrong: remembered ? prev.wrong : prev.wrong + 1,
+    }));
 
-      if (remembered) {
-        verbUpdates.LastCorrect = now;
-      } else {
-        verbUpdates.LastWrong = now;
-      }
+    x.jump(0);
+    setSwiping(false);
+    getNextPhrase(phraseId);
+  }, [currentPhrase, currentVerb, swiping, x, getNextPhrase]);
 
-      await supabase
-        .from('Verbs')
-        .update(verbUpdates)
-        .eq('id', currentVerb.id);
-
-      setStats(prev => ({
-        correct: remembered ? prev.correct + 1 : prev.correct,
-        wrong: remembered ? prev.wrong : prev.wrong + 1,
-      }));
-
-      setTimeout(() => {
-        setIsExiting(false);
-        setExitDirection(null);
-        x.set(0);
-        getNextPhrase();
-      }, 500);
-    } catch (error) {
-      console.error('Error updating phrase:', error);
-    }
-  };
-
-  const handleDragEnd = (event, info) => {
+  const handleDragEnd = useCallback((event, info) => {
     if (!showTranslation) {
-      x.set(0);
+      animate(x, 0, { type: 'spring', stiffness: 500, damping: 30 });
       return;
     }
 
-    const swipeThreshold = 100;
-    if (Math.abs(info.offset.x) > swipeThreshold) {
-      const remembered = info.offset.x > 0;
-      handleSwipe(remembered);
-    } else {
-      x.set(0);
-    }
-  };
+    const offset = info.offset.x;
+    const velocity = info.velocity.x;
 
-  if (loading) {
+    if (Math.abs(offset) > SWIPE_THRESHOLD || Math.abs(velocity) > 500) {
+      const remembered = offset > 0 || velocity > 500;
+      commitSwipe(remembered);
+    } else {
+      animate(x, 0, { type: 'spring', stiffness: 400, damping: 25 });
+    }
+  }, [showTranslation, x, commitSwipe]);
+
+  if (loading && !currentPhrase) {
     return (
       <div className="verb-study-container">
         <div className="loading">Loading...</div>
@@ -211,90 +228,69 @@ const VerbStudy = () => {
   const translationText = isGreekToRussian ? currentPhrase.Russian : currentPhrase.Greek;
   const verbDisplay = isGreekToRussian ? currentVerb.Greek : currentVerb.Russian;
 
-  const cardVariants = {
-    initial: { scale: 0.8, opacity: 0 },
-    animate: { scale: 1, opacity: 1 },
-    exit: {
-      x: exitDirection === 'right' ? 1000 : -1000,
-      opacity: 0,
-      rotate: exitDirection === 'right' ? 45 : -45,
-      transition: { duration: 0.5, ease: "easeInOut" }
-    }
-  };
-
   return (
     <div className="verb-study-container">
-      <div className="stats">
-        <span className="stat-correct">✓ {stats.correct}</span>
-        <span className="stat-wrong">✗ {stats.wrong}</span>
+      <div className="session-stats">
+        <span className="stat-correct">{stats.correct}</span>
+        <span className="stat-divider">/</span>
+        <span className="stat-wrong">{stats.wrong}</span>
       </div>
 
       {showTranslation && (
         <>
           <motion.div
             className="drop-zone drop-zone-left"
-            style={{ opacity: leftHighlight }}
+            style={{ opacity: dropZoneLeftOpacity, scale: dropZoneLeftScale }}
           >
             <div className="drop-zone-content">
               <span className="drop-zone-icon">✗</span>
-              <span className="drop-zone-text">Didn't remember</span>
             </div>
           </motion.div>
           <motion.div
             className="drop-zone drop-zone-right"
-            style={{ opacity: rightHighlight }}
+            style={{ opacity: dropZoneRightOpacity, scale: dropZoneRightScale }}
           >
             <div className="drop-zone-content">
               <span className="drop-zone-icon">✓</span>
-              <span className="drop-zone-text">Remembered!</span>
             </div>
           </motion.div>
         </>
       )}
 
       <div className="verb-indicator">
-        <span className="verb-label">Verb:</span>
         <span className="verb-name">{verbDisplay}</span>
       </div>
 
       <motion.div
-        key={currentPhrase?.id}
+        key={currentPhrase.id}
         className="card"
         style={{ x, rotate }}
-        drag={showTranslation ? "x" : false}
+        drag={showTranslation ? 'x' : false}
         dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.9}
         onDragEnd={handleDragEnd}
-        dragElastic={0.7}
-        variants={cardVariants}
-        initial="initial"
-        animate={isExiting ? "exit" : "animate"}
-        transition={{ duration: 0.3 }}
+        initial={{ scale: 0.92, opacity: 0, y: 40 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
       >
-        <div className="card-content">
-          <div className="card-text main-text">
-            {displayText}
-          </div>
+        {showTranslation && (
+          <>
+            <motion.div className="card-stamp stamp-forgot" style={{ opacity: stampLeftOpacity }}>
+              FORGOT
+            </motion.div>
+            <motion.div className="card-stamp stamp-remember" style={{ opacity: stampRightOpacity }}>
+              KNOW
+            </motion.div>
+          </>
+        )}
 
+        <div className="card-content">
+          <div className="card-text main-text">{displayText}</div>
           {showTranslation && (
-            <div className="card-text translation-text">
-              {translationText}
-            </div>
+            <div className="card-text translation-text">{translationText}</div>
           )}
         </div>
       </motion.div>
-
-      {showTranslation && (
-        <div className="swipe-hints">
-          <div className="hint hint-left">
-            <span className="hint-icon">←</span>
-            <span className="hint-text">Swipe left</span>
-          </div>
-          <div className="hint hint-right">
-            <span className="hint-icon">→</span>
-            <span className="hint-text">Swipe right</span>
-          </div>
-        </div>
-      )}
 
       {!showTranslation && (
         <button className="check-button" onClick={handleCheck}>
@@ -302,12 +298,9 @@ const VerbStudy = () => {
         </button>
       )}
 
-      <div className="card-stats">
-        <small>
-          Correct: {currentPhrase.NumberOfCorrect || 0} |
-          Wrong: {currentPhrase.NumberOfWrong || 0}
-        </small>
-      </div>
+      {showTranslation && (
+        <div className="swipe-cta">Drag the card</div>
+      )}
     </div>
   );
 };
