@@ -229,8 +229,7 @@ const Flashcard = () => {
         className="card"
         style={{ x, rotate }}
         drag={showTranslation ? 'x' : false}
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.9}
+        dragConstraints={false}
         onDragEnd={handleDragEnd}
         initial={{ scale: 0.92, opacity: 0, y: 40 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
