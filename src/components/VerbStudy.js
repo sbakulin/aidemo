@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate, useDragControls } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useSettings } from '../SettingsContext';
 import { useVerbs } from '../VerbsContext';
@@ -19,6 +19,7 @@ const VerbStudy = () => {
   const [swiping, setSwiping] = useState(false);
 
   const x = useMotionValue(0);
+  const dragControls = useDragControls();
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
   const stampLeftOpacity = useTransform(x, [-SWIPE_THRESHOLD, -40, 0], [1, 0, 0]);
   const stampRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD], [0, 0, 1]);
@@ -66,20 +67,16 @@ const VerbStudy = () => {
           ? 30
           : Math.max(0, (now - new Date(phrase.LastShown)) / (1000 * 60 * 60 * 24));
 
-        // Time is the dominant factor
         let weight = Math.pow(daysSinceLastShown + 0.5, 2);
 
-        // Never-shown: moderate boost
         if (isNew) {
           weight *= 3;
         }
 
-        // Last answer was wrong: boost
         if (phrase.Remembered === false) {
           weight *= 2.5;
         }
 
-        // Accuracy-based adjustment
         const wrongCount = phrase.NumberOfWrong || 0;
         const correctCount = phrase.NumberOfCorrect || 0;
         const totalAttempts = wrongCount + correctCount;
@@ -94,12 +91,10 @@ const VerbStudy = () => {
           }
         }
 
-        // Very recently shown: heavy penalty
         if (!isNew && daysSinceLastShown < 0.004) {
           weight *= 0.01;
         }
 
-        // Random jitter
         weight *= 0.8 + Math.random() * 0.4;
 
         return { ...phrase, weight: Math.max(weight, 0.001) };
@@ -173,8 +168,6 @@ const VerbStudy = () => {
     else verbUpdates.LastWrong = now;
 
     const phraseId = currentPhrase.id;
-
-    // Fire-and-forget DB updates
     supabase.from('VerbPhrases').update(phraseUpdates).eq('id', phraseId).then();
     supabase.from('Verbs').update(verbUpdates).eq('id', currentVerb.id).then();
 
@@ -204,6 +197,12 @@ const VerbStudy = () => {
       animate(x, 0, { type: 'spring', stiffness: 400, damping: 25 });
     }
   }, [showTranslation, x, commitSwipe]);
+
+  const startDrag = (event) => {
+    if (showTranslation) {
+      dragControls.start(event);
+    }
+  };
 
   if (loading && !currentPhrase) {
     return (
@@ -265,12 +264,15 @@ const VerbStudy = () => {
         key={currentPhrase.id}
         className="card"
         style={{ x, rotate }}
-        drag={showTranslation ? 'x' : false}
+        drag="x"
+        dragControls={dragControls}
+        dragListener={false}
         onDragEnd={handleDragEnd}
-        whileDrag={{ scale: 1.05, cursor: 'grabbing' }}
+        whileDrag={{ scale: 1.05 }}
         initial={{ scale: 0.92, opacity: 0, y: 40 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        onPointerDown={startDrag}
       >
         {showTranslation && (
           <>

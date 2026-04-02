@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate, useDragControls } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useSettings } from '../SettingsContext';
 import '../styles/Flashcard.css';
@@ -16,6 +16,7 @@ const Flashcard = () => {
   const [swiping, setSwiping] = useState(false);
 
   const x = useMotionValue(0);
+  const dragControls = useDragControls();
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
   const stampLeftOpacity = useTransform(x, [-SWIPE_THRESHOLD, -40, 0], [1, 0, 0]);
   const stampRightOpacity = useTransform(x, [0, 40, SWIPE_THRESHOLD], [0, 0, 1]);
@@ -50,40 +51,34 @@ const Flashcard = () => {
           ? 30
           : Math.max(0, (now - new Date(card.LastShown)) / (1000 * 60 * 60 * 24));
 
-        // Time is the dominant factor — ensures full deck rotation
         let weight = Math.pow(daysSinceLastShown + 0.5, 2);
 
-        // Never-shown cards: moderate boost (not overwhelming)
         if (isNew) {
           weight *= 3;
         }
 
-        // Last answer was wrong: boost
         if (card.Remembered === false) {
           weight *= 2.5;
         }
 
-        // Accuracy-based adjustment
         const wrongCount = card.NumberOfWrong || 0;
         const correctCount = card.NumberOfCorrect || 0;
         const totalAttempts = wrongCount + correctCount;
         if (totalAttempts >= 2) {
           const accuracy = correctCount / totalAttempts;
           if (accuracy >= 0.8) {
-            weight *= 0.25; // Well-known cards: much less likely but still possible
+            weight *= 0.25;
           } else if (accuracy >= 0.6) {
             weight *= 0.5;
           } else {
-            weight *= 1.5; // Struggling cards: mild boost
+            weight *= 1.5;
           }
         }
 
-        // Very recently shown (< 5 min): heavy penalty to avoid repeats
         if (!isNew && daysSinceLastShown < 0.004) {
           weight *= 0.01;
         }
 
-        // Random jitter for variety
         weight *= 0.8 + Math.random() * 0.4;
 
         return { ...card, weight: Math.max(weight, 0.001) };
@@ -163,7 +158,6 @@ const Flashcard = () => {
     const offset = info.offset.x;
     const velocity = info.velocity.x;
 
-    // Accept swipe if dragged far enough OR if velocity is high enough
     if (Math.abs(offset) > SWIPE_THRESHOLD || Math.abs(velocity) > 500) {
       const remembered = offset > 0 || velocity > 500;
       commitSwipe(remembered);
@@ -171,6 +165,12 @@ const Flashcard = () => {
       animate(x, 0, { type: 'spring', stiffness: 400, damping: 25 });
     }
   }, [showTranslation, x, commitSwipe]);
+
+  const startDrag = (event) => {
+    if (showTranslation) {
+      dragControls.start(event);
+    }
+  };
 
   if (loading && !currentCard) {
     return (
@@ -202,7 +202,6 @@ const Flashcard = () => {
         <span className="stat-wrong">{stats.wrong}</span>
       </div>
 
-      {/* Drop zones — always visible when translation shown */}
       {showTranslation && (
         <>
           <motion.div
@@ -228,14 +227,16 @@ const Flashcard = () => {
         key={currentCard.id}
         className="card"
         style={{ x, rotate }}
-        drag={showTranslation ? 'x' : false}
+        drag="x"
+        dragControls={dragControls}
+        dragListener={false}
         onDragEnd={handleDragEnd}
-        whileDrag={{ scale: 1.05, cursor: 'grabbing' }}
+        whileDrag={{ scale: 1.05 }}
         initial={{ scale: 0.92, opacity: 0, y: 40 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        onPointerDown={startDrag}
       >
-        {/* On-card stamps */}
         {showTranslation && (
           <>
             <motion.div className="card-stamp stamp-forgot" style={{ opacity: stampLeftOpacity }}>
@@ -265,7 +266,7 @@ const Flashcard = () => {
         <div className="swipe-cta">Drag the card</div>
       )}
 
-      <div className="version-tag">v2.2</div>
+      <div className="version-tag">v2.3</div>
     </div>
   );
 };
