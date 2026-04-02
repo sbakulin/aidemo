@@ -1,0 +1,302 @@
+.theme-study-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: calc(100vh - 140px);
+  position: relative;
+  justify-content: center;
+  overflow-x: hidden;
+}
+
+/* --- Progress pill --- */
+.theme-progress-bar {
+  position: absolute;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6px 18px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  color: white;
+}
+
+/* --- Drop zones (identical to Flashcard) --- */
+.theme-drop-zone {
+  position: fixed;
+  top: 0;
+  bottom: 70px;
+  width: 35%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-drop-zone-left {
+  left: 0;
+  background: linear-gradient(to right, rgba(245, 101, 101, 0.45), transparent);
+}
+
+.theme-drop-zone-right {
+  right: 0;
+  background: linear-gradient(to left, rgba(72, 187, 120, 0.45), transparent);
+}
+
+.theme-drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-drop-zone-label {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+
+.theme-drop-zone-icon {
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.theme-drop-zone-left .theme-drop-zone-icon {
+  color: #f56565;
+}
+
+.theme-drop-zone-right .theme-drop-zone-icon {
+  color: #48bb78;
+}
+
+/* --- Card (identical to Flashcard) --- */
+.theme-card-study {
+  width: 100%;
+  max-width: 380px;
+  min-height: 320px;
+  background: white;
+  border-radius: 20px;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.18),
+    0 6px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 28px;
+  cursor: grab;
+  user-select: none;
+  position: relative;
+  z-index: 10;
+  touch-action: none;
+}
+
+.theme-card-study:active,
+.theme-card-study.card-dragging {
+  cursor: grabbing;
+}
+
+.theme-card-content {
+  width: 100%;
+  text-align: center;
+}
+
+.theme-card-text {
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.theme-main-text {
+  color: #2d3748;
+}
+
+.theme-translation-text {
+  color: #667eea;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid #edf2f7;
+  font-size: 1.6rem;
+}
+
+/* --- Check button (identical to Flashcard) --- */
+.theme-check-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 16px 48px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  margin-top: 32px;
+}
+
+.theme-check-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.theme-check-button:active {
+  transform: translateY(0);
+}
+
+/* --- Swipe CTA --- */
+.theme-swipe-cta {
+  margin-top: 28px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  animation: theme-pulse-fade 2s ease-in-out infinite;
+}
+
+@keyframes theme-pulse-fade {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+/* --- Summary screen --- */
+.theme-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  padding: 40px 20px;
+}
+
+.theme-summary-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.theme-summary-percentage {
+  font-size: 4rem;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.theme-summary-detail {
+  font-size: 1.1rem;
+  opacity: 0.85;
+  margin-bottom: 36px;
+}
+
+.theme-summary-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.theme-summary-btn {
+  padding: 14px 32px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.theme-summary-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.theme-summary-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.theme-summary-btn-secondary {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+.theme-summary-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* --- Loading --- */
+.theme-study-loading {
+  text-align: center;
+  color: white;
+  font-size: 1.3rem;
+  margin-top: 80px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .theme-study-container {
+    padding: 10px;
+  }
+
+  .theme-card-study {
+    min-height: 280px;
+    padding: 28px 20px;
+  }
+
+  .theme-card-text {
+    font-size: 1.5rem;
+  }
+
+  .theme-translation-text {
+    font-size: 1.3rem;
+  }
+
+  .theme-progress-bar {
+    font-size: 1rem;
+  }
+
+  .theme-check-button {
+    padding: 14px 40px;
+    font-size: 1.05rem;
+  }
+
+  .theme-drop-zone-icon {
+    font-size: 2.5rem;
+  }
+
+  .theme-drop-zone-label {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-card-study {
+    min-height: 250px;
+    padding: 22px 16px;
+  }
+
+  .theme-card-text {
+    font-size: 1.3rem;
+  }
+
+  .theme-translation-text {
+    font-size: 1.15rem;
+  }
+
+  .theme-summary-percentage {
+    font-size: 3rem;
+  }
+}

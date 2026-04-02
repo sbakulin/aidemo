@@ -7,6 +7,8 @@ import Flashcard from './components/Flashcard';
 import Settings from './components/Settings';
 import Admin from './components/Admin';
 import VerbStudy from './components/VerbStudy';
+import ThemeList from './components/ThemeList';
+import ThemeStudy from './components/ThemeStudy';
 import './App.css';
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<Flashcard />} />
                 <Route path="/verbs" element={<VerbStudy />} />
+                <Route path="/themes" element={<ThemeList />} />
+                <Route path="/themes/:id" element={<ThemeStudy />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/admin" element={<Admin />} />
               </Routes>

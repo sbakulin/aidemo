@@ -21,7 +21,7 @@
   color: #718096;
   transition: all 0.3s ease;
   border-radius: 12px;
-  min-width: 80px;
+  min-width: 64px;
 }
 
 .nav-link:hover {
@@ -55,7 +55,7 @@
 
   .nav-link {
     padding: 6px 15px;
-    min-width: 70px;
+    min-width: 56px;
   }
 
   .nav-icon {
@@ -70,7 +70,7 @@
 @media (max-width: 480px) {
   .nav-link {
     padding: 6px 10px;
-    min-width: 60px;
+    min-width: 50px;
   }
 
   .nav-text {

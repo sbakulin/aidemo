@@ -1,0 +1,119 @@
+.theme-list-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: calc(100vh - 140px);
+}
+
+.theme-list-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 24px;
+}
+
+.theme-list-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.theme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.theme-card {
+  background: white;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.theme-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14), 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-card:active {
+  transform: translateY(0);
+}
+
+.theme-card-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.theme-card-progress {
+  font-size: 0.95rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.theme-progress-in-progress {
+  color: #a0aec0;
+}
+
+.theme-progress-green {
+  color: #48bb78;
+}
+
+.theme-progress-yellow {
+  color: #ecc94b;
+}
+
+.theme-progress-red {
+  color: #f56565;
+}
+
+.theme-list-loading,
+.theme-list-empty {
+  text-align: center;
+  color: white;
+  font-size: 1.3rem;
+  margin-top: 80px;
+}
+
+.theme-list-empty p {
+  font-size: 1rem;
+  opacity: 0.8;
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .theme-list-container {
+    padding: 14px;
+  }
+
+  .theme-card {
+    padding: 16px 16px;
+  }
+
+  .theme-card-name {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-card {
+    padding: 14px 14px;
+    border-radius: 12px;
+  }
+
+  .theme-card-name {
+    font-size: 1rem;
+  }
+
+  .theme-card-progress {
+    font-size: 0.85rem;
+  }
+}
