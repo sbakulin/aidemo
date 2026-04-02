@@ -18,7 +18,6 @@ const VerbStudy = () => {
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
   const [swiping, setSwiping] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [cardKey, setCardKey] = useState(0);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
@@ -150,8 +149,8 @@ const VerbStudy = () => {
       wrong: remembered ? prev.wrong : prev.wrong + 1,
     }));
 
+    setCurrentPhrase(null);
     x.jump(0);
-    setCardKey(k => k + 1);
     setSwiping(false);
     getNextPhrase(phraseId);
   }, [currentPhrase, currentVerb, swiping, x, getNextPhrase]);
@@ -204,7 +203,7 @@ const VerbStudy = () => {
     );
   }
 
-  if (!currentPhrase) {
+  if (!currentPhrase && !loading) {
     return (
       <div className="verb-study-container">
         <div className="no-cards">
@@ -215,9 +214,9 @@ const VerbStudy = () => {
     );
   }
 
-  const displayText = isGreekToRussian ? currentPhrase.Greek : currentPhrase.Russian;
-  const translationText = isGreekToRussian ? currentPhrase.Russian : currentPhrase.Greek;
-  const verbDisplay = isGreekToRussian ? currentVerb.Greek : currentVerb.Russian;
+  const displayText = currentPhrase ? (isGreekToRussian ? currentPhrase.Greek : currentPhrase.Russian) : '';
+  const translationText = currentPhrase ? (isGreekToRussian ? currentPhrase.Russian : currentPhrase.Greek) : '';
+  const verbDisplay = currentVerb ? (isGreekToRussian ? currentVerb.Greek : currentVerb.Russian) : '';
 
   return (
     <div className="verb-study-container">
@@ -227,57 +226,38 @@ const VerbStudy = () => {
         <span className="stat-wrong">{stats.wrong}</span>
       </div>
 
-      {showTranslation && (
-        <>
-          <motion.div
-            className="drop-zone drop-zone-left"
-            style={{ opacity: dropZoneLeftOpacity, scale: dropZoneLeftScale }}
-          >
-            <div className="drop-zone-content">
-              <span className="drop-zone-label">FORGOT</span>
-              <span className="drop-zone-icon">✗</span>
-            </div>
-          </motion.div>
-          <motion.div
-            className="drop-zone drop-zone-right"
-            style={{ opacity: dropZoneRightOpacity, scale: dropZoneRightScale }}
-          >
-            <div className="drop-zone-content">
-              <span className="drop-zone-label">KNOW</span>
-              <span className="drop-zone-icon">✓</span>
-            </div>
-          </motion.div>
-        </>
+      {currentVerb && (
+        <div className="verb-indicator">
+          <span className="verb-name">{verbDisplay}</span>
+        </div>
       )}
 
-      <div className="verb-indicator">
-        <span className="verb-name">{verbDisplay}</span>
-      </div>
+      {currentPhrase && (
+        <motion.div
+          key={currentPhrase.id}
+          className={`card ${dragging ? 'card-dragging' : ''}`}
+          style={{ x, rotate }}
+          onPointerDown={onPointerDown}
+          initial={{ scale: 0.92, opacity: 0, y: 40 }}
+          animate={{ scale: dragging ? 1.05 : 1, opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        >
+          <div className="card-content">
+            <div className="card-text main-text">{displayText}</div>
+            {showTranslation && (
+              <div className="card-text translation-text">{translationText}</div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
-      <motion.div
-        key={cardKey}
-        className={`card ${dragging ? 'card-dragging' : ''}`}
-        style={{ x, rotate }}
-        onPointerDown={onPointerDown}
-        initial={{ scale: 0.92, opacity: 0, y: 40 }}
-        animate={{ scale: dragging ? 1.05 : 1, opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-      >
-        <div className="card-content">
-          <div className="card-text main-text">{displayText}</div>
-          {showTranslation && (
-            <div className="card-text translation-text">{translationText}</div>
-          )}
-        </div>
-      </motion.div>
-
-      {!showTranslation && (
+      {currentPhrase && !showTranslation && (
         <button className="check-button" onClick={handleCheck}>
           Check Translation
         </button>
       )}
 
-      {showTranslation && (
+      {currentPhrase && showTranslation && (
         <div className="swipe-cta">Drag the card</div>
       )}
     </div>

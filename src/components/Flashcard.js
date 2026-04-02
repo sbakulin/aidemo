@@ -15,7 +15,6 @@ const Flashcard = () => {
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
   const [swiping, setSwiping] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [cardKey, setCardKey] = useState(0);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
@@ -124,8 +123,8 @@ const Flashcard = () => {
       wrong: remembered ? prev.wrong : prev.wrong + 1,
     }));
 
+    setCurrentCard(null);
     x.jump(0);
-    setCardKey(k => k + 1);
     setSwiping(false);
     getNextCard(cardId);
   }, [currentCard, swiping, x, getNextCard]);
@@ -181,7 +180,7 @@ const Flashcard = () => {
     );
   }
 
-  if (!currentCard) {
+  if (!currentCard && !loading) {
     return (
       <div className="flashcard-container">
         <div className="no-cards">
@@ -192,8 +191,8 @@ const Flashcard = () => {
     );
   }
 
-  const displayText = isGreekToRussian ? currentCard.Greek : currentCard.Russian;
-  const translationText = isGreekToRussian ? currentCard.Russian : currentCard.Greek;
+  const displayText = currentCard ? (isGreekToRussian ? currentCard.Greek : currentCard.Russian) : '';
+  const translationText = currentCard ? (isGreekToRussian ? currentCard.Russian : currentCard.Greek) : '';
 
   return (
     <div className="flashcard-container">
@@ -203,57 +202,36 @@ const Flashcard = () => {
         <span className="stat-wrong">{stats.wrong}</span>
       </div>
 
-      {showTranslation && (
-        <>
-          <motion.div
-            className="drop-zone drop-zone-left"
-            style={{ opacity: dropZoneLeftOpacity, scale: dropZoneLeftScale }}
-          >
-            <div className="drop-zone-content">
-              <span className="drop-zone-label">FORGOT</span>
-              <span className="drop-zone-icon">✗</span>
-            </div>
-          </motion.div>
-          <motion.div
-            className="drop-zone drop-zone-right"
-            style={{ opacity: dropZoneRightOpacity, scale: dropZoneRightScale }}
-          >
-            <div className="drop-zone-content">
-              <span className="drop-zone-label">KNOW</span>
-              <span className="drop-zone-icon">✓</span>
-            </div>
-          </motion.div>
-        </>
+      {currentCard && (
+        <motion.div
+          key={currentCard.id}
+          className={`card ${dragging ? 'card-dragging' : ''}`}
+          style={{ x, rotate }}
+          onPointerDown={onPointerDown}
+          initial={{ scale: 0.92, opacity: 0, y: 40 }}
+          animate={{ scale: dragging ? 1.05 : 1, opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        >
+          <div className="card-content">
+            <div className="card-text main-text">{displayText}</div>
+            {showTranslation && (
+              <div className="card-text translation-text">{translationText}</div>
+            )}
+          </div>
+        </motion.div>
       )}
 
-      <motion.div
-        key={cardKey}
-        className={`card ${dragging ? 'card-dragging' : ''}`}
-        style={{ x, rotate }}
-        onPointerDown={onPointerDown}
-        initial={{ scale: 0.92, opacity: 0, y: 40 }}
-        animate={{ scale: dragging ? 1.05 : 1, opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-      >
-        <div className="card-content">
-          <div className="card-text main-text">{displayText}</div>
-          {showTranslation && (
-            <div className="card-text translation-text">{translationText}</div>
-          )}
-        </div>
-      </motion.div>
-
-      {!showTranslation && (
+      {currentCard && !showTranslation && (
         <button className="check-button" onClick={handleCheck}>
           Check Translation
         </button>
       )}
 
-      {showTranslation && (
+      {currentCard && showTranslation && (
         <div className="swipe-cta">Drag the card</div>
       )}
 
-      <div className="version-tag">v3.2</div>
+      <div className="version-tag">v3.3</div>
     </div>
   );
 };
