@@ -448,6 +448,78 @@
   transform: scale(1.1);
 }
 
+/* Theme editing */
+.theme-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-button-small,
+.save-button-small {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.edit-button-small {
+  background: #bee3f8;
+  color: #2c5282;
+}
+
+.edit-button-small:hover {
+  background: #90cdf4;
+  transform: scale(1.1);
+}
+
+.save-button-small {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.save-button-small:hover {
+  background: #9ae6b4;
+  transform: scale(1.1);
+}
+
+.theme-name-edit-input {
+  padding: 6px 12px;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  flex: 1;
+  min-width: 200px;
+}
+
+.phrase-edit-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+.phrase-edit-input {
+  padding: 8px 12px;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #2d3748;
+  flex: 1;
+  min-width: 0;
+}
+
+.phrase-edit-input:focus,
+.theme-name-edit-input:focus {
+  outline: none;
+  border-color: #764ba2;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .admin-container {

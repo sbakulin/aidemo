@@ -25,9 +25,24 @@ const Admin = () => {
   const [expandedVerbs, setExpandedVerbs] = useState({});
   const fileInputRef = useRef(null);
 
+  // Themes state
+  const [themes, setThemes] = useState([]);
+  const [loadingThemes, setLoadingThemes] = useState(true);
+  const [newThemeName, setNewThemeName] = useState('');
+  const [expandedThemes, setExpandedThemes] = useState({});
+  const [editingThemeId, setEditingThemeId] = useState(null);
+  const [editingThemeName, setEditingThemeName] = useState('');
+  const [selectedThemeId, setSelectedThemeId] = useState(null);
+  const [newThemePhraseGreek, setNewThemePhraseGreek] = useState('');
+  const [newThemePhraseRussian, setNewThemePhraseRussian] = useState('');
+  const [editingPhraseId, setEditingPhraseId] = useState(null);
+  const [editingPhraseGreek, setEditingPhraseGreek] = useState('');
+  const [editingPhraseRussian, setEditingPhraseRussian] = useState('');
+
   useEffect(() => {
     loadPhrases();
     loadVerbs();
+    loadThemes();
   }, []);
 
   // ============ CARDS FUNCTIONS ============
@@ -51,7 +66,7 @@ const Admin = () => {
     e.preventDefault();
 
     if (!greekText.trim() || !russianText.trim()) {
-      setMessage('Please fill in both fields');
+      setMessage('Пожалуйста, заполните оба поля');
       return;
     }
 
@@ -281,6 +296,197 @@ const Admin = () => {
     }));
   };
 
+  // ============ THEMES FUNCTIONS ============
+  const loadThemes = async () => {
+    try {
+      setLoadingThemes(true);
+      const { data: themesData, error: themesError } = await supabase
+        .from('Themes')
+        .select('*')
+        .order('OrderIndex');
+
+      if (themesError) throw themesError;
+
+      const themesWithPhrases = await Promise.all(
+        (themesData || []).map(async (theme) => {
+          const { data: phrasesData } = await supabase
+            .from('ThemePhrases')
+            .select('*')
+            .eq('ThemeId', theme.id)
+            .order('OrderIndex');
+          return { ...theme, phrases: phrasesData || [] };
+        })
+      );
+
+      setThemes(themesWithPhrases);
+    } catch (error) {
+      console.error('Error loading themes:', error);
+    } finally {
+      setLoadingThemes(false);
+    }
+  };
+
+  const handleAddTheme = async (e) => {
+    e.preventDefault();
+    if (!newThemeName.trim()) {
+      setMessage('Please enter a theme name');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const maxOrder = themes.length > 0
+        ? Math.max(...themes.map(t => t.OrderIndex || 0)) + 1
+        : 0;
+
+      const { error } = await supabase
+        .from('Themes')
+        .insert([{ Name: newThemeName.trim(), OrderIndex: maxOrder }]);
+
+      if (error) throw error;
+
+      setNewThemeName('');
+      await loadThemes();
+      setMessage('Theme added successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error adding theme:', error);
+      setMessage('Error adding theme: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTheme = async (themeId) => {
+    if (!window.confirm('Delete this theme and all its phrases?')) return;
+
+    try {
+      // Delete progress and phrases first (in case no cascade)
+      await supabase.from('ThemeProgress').delete().eq('ThemeId', themeId);
+      await supabase.from('ThemePhrases').delete().eq('ThemeId', themeId);
+      const { error } = await supabase.from('Themes').delete().eq('id', themeId);
+
+      if (error) throw error;
+
+      await loadThemes();
+      setMessage('Theme deleted successfully');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error deleting theme:', error);
+      setMessage('Error deleting theme: ' + error.message);
+    }
+  };
+
+  const handleSaveThemeName = async (themeId) => {
+    if (!editingThemeName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('Themes')
+        .update({ Name: editingThemeName.trim() })
+        .eq('id', themeId);
+
+      if (error) throw error;
+
+      setEditingThemeId(null);
+      await loadThemes();
+      setMessage('Theme name updated');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error updating theme:', error);
+      setMessage('Error updating theme: ' + error.message);
+    }
+  };
+
+  const handleAddThemePhrase = async (e) => {
+    e.preventDefault();
+    if (!selectedThemeId || !newThemePhraseGreek.trim() || !newThemePhraseRussian.trim()) {
+      setMessage('Please select a theme and fill in both fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const theme = themes.find(t => t.id === selectedThemeId);
+      const maxOrder = theme && theme.phrases.length > 0
+        ? Math.max(...theme.phrases.map(p => p.OrderIndex || 0)) + 1
+        : 0;
+
+      const { error } = await supabase
+        .from('ThemePhrases')
+        .insert([{
+          ThemeId: selectedThemeId,
+          Greek: newThemePhraseGreek.trim(),
+          Russian: newThemePhraseRussian.trim(),
+          OrderIndex: maxOrder,
+        }]);
+
+      if (error) throw error;
+
+      setNewThemePhraseGreek('');
+      setNewThemePhraseRussian('');
+      await loadThemes();
+      setMessage('Phrase added successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error adding theme phrase:', error);
+      setMessage('Error adding phrase: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteThemePhrase = async (phraseId) => {
+    if (!window.confirm('Delete this phrase?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('ThemePhrases')
+        .delete()
+        .eq('id', phraseId);
+
+      if (error) throw error;
+
+      await loadThemes();
+      setMessage('Phrase deleted successfully');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error deleting phrase:', error);
+      setMessage('Error deleting phrase: ' + error.message);
+    }
+  };
+
+  const handleSaveThemePhrase = async (phraseId) => {
+    if (!editingPhraseGreek.trim() || !editingPhraseRussian.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('ThemePhrases')
+        .update({
+          Greek: editingPhraseGreek.trim(),
+          Russian: editingPhraseRussian.trim(),
+        })
+        .eq('id', phraseId);
+
+      if (error) throw error;
+
+      setEditingPhraseId(null);
+      await loadThemes();
+      setMessage('Phrase updated');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error updating phrase:', error);
+      setMessage('Error updating phrase: ' + error.message);
+    }
+  };
+
+  const toggleThemeExpanded = (themeId) => {
+    setExpandedThemes(prev => ({
+      ...prev,
+      [themeId]: !prev[themeId]
+    }));
+  };
+
   // ============ IMPORT FUNCTIONS ============
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -422,6 +628,12 @@ const Admin = () => {
           onClick={() => setActiveTab('verbs')}
         >
           Verbs
+        </button>
+        <button
+          className={`tab ${activeTab === 'themes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('themes')}
+        >
+          Themes
         </button>
       </div>
 
@@ -663,6 +875,232 @@ const Admin = () => {
                               >
                                 ✗
                               </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+      {/* ============ THEMES TAB ============ */}
+      {activeTab === 'themes' && (
+        <>
+          <form onSubmit={handleAddTheme} className="phrase-form">
+            <h3>Add New Theme</h3>
+            <div className="form-group">
+              <label htmlFor="themeName">Theme Name</label>
+              <input
+                type="text"
+                id="themeName"
+                value={newThemeName}
+                onChange={(e) => setNewThemeName(e.target.value)}
+                placeholder="e.g., Моя семья"
+                disabled={loading}
+              />
+            </div>
+            <button type="submit" className="submit-button" disabled={loading}>
+              {loading ? 'Adding...' : 'Add Theme'}
+            </button>
+          </form>
+
+          <form onSubmit={handleAddThemePhrase} className="phrase-form">
+            <h3>Add Phrase to Theme</h3>
+            <div className="form-group">
+              <label htmlFor="selectTheme">Select Theme</label>
+              <select
+                id="selectTheme"
+                value={selectedThemeId || ''}
+                onChange={(e) => setSelectedThemeId(e.target.value ? Number(e.target.value) : null)}
+                disabled={loading}
+              >
+                <option value="">-- Select a theme --</option>
+                {themes.map(theme => (
+                  <option key={theme.id} value={theme.id}>
+                    {theme.Name} ({theme.phrases?.length || 0} phrases)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="themePhraseGreek">Greek</label>
+                <input
+                  type="text"
+                  id="themePhraseGreek"
+                  value={newThemePhraseGreek}
+                  onChange={(e) => setNewThemePhraseGreek(e.target.value)}
+                  placeholder="Greek phrase"
+                  disabled={loading || !selectedThemeId}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="themePhraseRussian">Russian</label>
+                <input
+                  type="text"
+                  id="themePhraseRussian"
+                  value={newThemePhraseRussian}
+                  onChange={(e) => setNewThemePhraseRussian(e.target.value)}
+                  placeholder="Russian translation"
+                  disabled={loading || !selectedThemeId}
+                />
+              </div>
+            </div>
+            <button type="submit" className="submit-button" disabled={loading || !selectedThemeId}>
+              {loading ? 'Adding...' : 'Add Phrase'}
+            </button>
+          </form>
+
+          <div className="verbs-list-admin">
+            <h2>Existing Themes ({themes.length})</h2>
+
+            {loadingThemes ? (
+              <div className="loading">Loading themes...</div>
+            ) : themes.length === 0 ? (
+              <div className="no-phrases">No themes yet. Add some above!</div>
+            ) : (
+              <div className="verbs-accordion">
+                {themes.map((theme) => (
+                  <div key={theme.id} className="verb-item">
+                    <div className="verb-header" onClick={() => toggleThemeExpanded(theme.id)}>
+                      <div className="verb-title">
+                        <span className="verb-expand-icon">
+                          {expandedThemes[theme.id] ? '▼' : '▶'}
+                        </span>
+                        {editingThemeId === theme.id ? (
+                          <input
+                            className="theme-name-edit-input"
+                            value={editingThemeName}
+                            onChange={(e) => setEditingThemeName(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveThemeName(theme.id);
+                              if (e.key === 'Escape') setEditingThemeId(null);
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="verb-name">{theme.Name}</span>
+                        )}
+                        <span className="verb-count">({theme.phrases?.length || 0} phrases)</span>
+                      </div>
+                      <div className="theme-header-actions" onClick={(e) => e.stopPropagation()}>
+                        {editingThemeId === theme.id ? (
+                          <>
+                            <button
+                              onClick={() => handleSaveThemeName(theme.id)}
+                              className="save-button-small"
+                              title="Save"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => setEditingThemeId(null)}
+                              className="delete-button-small"
+                              title="Cancel"
+                            >
+                              ✗
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingThemeId(theme.id);
+                                setEditingThemeName(theme.Name);
+                              }}
+                              className="edit-button-small"
+                              title="Edit name"
+                            >
+                              ✎
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTheme(theme.id)}
+                              className="delete-button-small"
+                              title="Delete theme"
+                            >
+                              ✗
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {expandedThemes[theme.id] && (
+                      <div className="verb-phrases">
+                        {theme.phrases?.length === 0 ? (
+                          <div className="no-phrases-small">No phrases in this theme</div>
+                        ) : (
+                          theme.phrases?.map((phrase) => (
+                            <div key={phrase.id} className="phrase-item">
+                              {editingPhraseId === phrase.id ? (
+                                <div className="phrase-edit-row">
+                                  <input
+                                    className="phrase-edit-input"
+                                    value={editingPhraseGreek}
+                                    onChange={(e) => setEditingPhraseGreek(e.target.value)}
+                                    placeholder="Greek"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveThemePhrase(phrase.id);
+                                      if (e.key === 'Escape') setEditingPhraseId(null);
+                                    }}
+                                  />
+                                  <input
+                                    className="phrase-edit-input"
+                                    value={editingPhraseRussian}
+                                    onChange={(e) => setEditingPhraseRussian(e.target.value)}
+                                    placeholder="Russian"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveThemePhrase(phrase.id);
+                                      if (e.key === 'Escape') setEditingPhraseId(null);
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => handleSaveThemePhrase(phrase.id)}
+                                    className="save-button-small"
+                                    title="Save"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingPhraseId(null)}
+                                    className="delete-button-small"
+                                    title="Cancel"
+                                  >
+                                    ✗
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="phrase-item-content">
+                                    <div className="phrase-item-greek">{phrase.Greek}</div>
+                                    <div className="phrase-item-russian">{phrase.Russian}</div>
+                                  </div>
+                                  <div className="theme-header-actions">
+                                    <button
+                                      onClick={() => {
+                                        setEditingPhraseId(phrase.id);
+                                        setEditingPhraseGreek(phrase.Greek);
+                                        setEditingPhraseRussian(phrase.Russian);
+                                      }}
+                                      className="edit-button-small"
+                                      title="Edit phrase"
+                                    >
+                                      ✎
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteThemePhrase(phrase.id)}
+                                      className="delete-button-small"
+                                      title="Delete phrase"
+                                    >
+                                      ✗
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           ))
                         )}
