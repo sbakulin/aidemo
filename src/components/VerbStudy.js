@@ -232,6 +232,29 @@ const VerbStudy = () => {
         </div>
       )}
 
+      {currentPhrase && showTranslation && (
+        <>
+          <motion.div
+            className="drop-zone drop-zone-left"
+            style={{ opacity: dropZoneLeftOpacity, scale: dropZoneLeftScale }}
+          >
+            <div className="drop-zone-content">
+              <span className="drop-zone-label">FORGOT</span>
+              <span className="drop-zone-icon">✗</span>
+            </div>
+          </motion.div>
+          <motion.div
+            className="drop-zone drop-zone-right"
+            style={{ opacity: dropZoneRightOpacity, scale: dropZoneRightScale }}
+          >
+            <div className="drop-zone-content">
+              <span className="drop-zone-label">KNOW</span>
+              <span className="drop-zone-icon">✓</span>
+            </div>
+          </motion.div>
+        </>
+      )}
+
       {currentPhrase && (
         <motion.div
           key={currentPhrase.id}

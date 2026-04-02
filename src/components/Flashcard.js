@@ -202,6 +202,29 @@ const Flashcard = () => {
         <span className="stat-wrong">{stats.wrong}</span>
       </div>
 
+      {currentCard && showTranslation && (
+        <>
+          <motion.div
+            className="drop-zone drop-zone-left"
+            style={{ opacity: dropZoneLeftOpacity, scale: dropZoneLeftScale }}
+          >
+            <div className="drop-zone-content">
+              <span className="drop-zone-label">FORGOT</span>
+              <span className="drop-zone-icon">✗</span>
+            </div>
+          </motion.div>
+          <motion.div
+            className="drop-zone drop-zone-right"
+            style={{ opacity: dropZoneRightOpacity, scale: dropZoneRightScale }}
+          >
+            <div className="drop-zone-content">
+              <span className="drop-zone-label">KNOW</span>
+              <span className="drop-zone-icon">✓</span>
+            </div>
+          </motion.div>
+        </>
+      )}
+
       {currentCard && (
         <motion.div
           key={currentCard.id}
@@ -231,7 +254,7 @@ const Flashcard = () => {
         <div className="swipe-cta">Drag the card</div>
       )}
 
-      <div className="version-tag">v3.3</div>
+      <div className="version-tag">v3.4</div>
     </div>
   );
 };
