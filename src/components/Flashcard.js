@@ -15,6 +15,7 @@ const Flashcard = () => {
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
   const [swiping, setSwiping] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [cardKey, setCardKey] = useState(0);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
@@ -124,6 +125,7 @@ const Flashcard = () => {
     }));
 
     x.jump(0);
+    setCardKey(k => k + 1);
     setSwiping(false);
     getNextCard(cardId);
   }, [currentCard, swiping, x, getNextCard]);
@@ -225,7 +227,7 @@ const Flashcard = () => {
       )}
 
       <motion.div
-        key={currentCard.id}
+        key={cardKey}
         className={`card ${dragging ? 'card-dragging' : ''}`}
         style={{ x, rotate }}
         onPointerDown={onPointerDown}
@@ -251,7 +253,7 @@ const Flashcard = () => {
         <div className="swipe-cta">Drag the card</div>
       )}
 
-      <div className="version-tag">v3.1</div>
+      <div className="version-tag">v3.2</div>
     </div>
   );
 };

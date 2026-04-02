@@ -18,6 +18,7 @@ const VerbStudy = () => {
   const [stats, setStats] = useState({ correct: 0, wrong: 0 });
   const [swiping, setSwiping] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [cardKey, setCardKey] = useState(0);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18]);
@@ -150,6 +151,7 @@ const VerbStudy = () => {
     }));
 
     x.jump(0);
+    setCardKey(k => k + 1);
     setSwiping(false);
     getNextPhrase(phraseId);
   }, [currentPhrase, currentVerb, swiping, x, getNextPhrase]);
@@ -253,7 +255,7 @@ const VerbStudy = () => {
       </div>
 
       <motion.div
-        key={currentPhrase.id}
+        key={cardKey}
         className={`card ${dragging ? 'card-dragging' : ''}`}
         style={{ x, rotate }}
         onPointerDown={onPointerDown}
