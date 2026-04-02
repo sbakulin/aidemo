@@ -264,6 +264,8 @@ const Flashcard = () => {
       {showTranslation && (
         <div className="swipe-cta">Drag the card</div>
       )}
+
+      <div className="version-tag">v2.1</div>
     </div>
   );
 };
